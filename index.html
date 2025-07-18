@@ -1,0 +1,937 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英Hack (Eigo-Hack) - タイムアタック</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Noto+Sans+JP:wght@400;700;900&display=swap');
+    
+    :root {
+      --primary: #00b3ff;
+      --secondary: #0066cc;
+      --accent: #00ffcc;
+      --highlight: #ffff00;
+      --dark: #0a0a20;
+      --darker: #050510;
+      --glow: 0 0 10px var(--primary), 0 0 20px rgba(0, 179, 255, 0.5);
+      --highlight-glow: 0 0 10px var(--highlight), 0 0 15px rgba(255, 255, 0, 0.5);
+    }
+    
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: var(--darker);
+      color: white;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(0, 102, 204, 0.1) 0%, transparent 80%),
+        linear-gradient(to bottom, var(--darker), var(--dark));
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .checkpoint-title {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      text-shadow: var(--glow);
+      text-transform: uppercase;
+      border-radius: 12px;
+      padding: 0.1em 0.2em;
+      background: linear-gradient(to right, var(--primary), #0099ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+      display: inline-block;
+    }
+    
+    .checkpoint-title:after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: -1;
+      background: linear-gradient(to right, var(--secondary), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: blur(8px);
+      opacity: 0.7;
+    }
+    
+    .cyber-title {
+      font-family: 'Orbitron', sans-serif;
+      text-shadow: var(--glow);
+    }
+    
+    .cyber-panel {
+      background: rgba(10, 10, 32, 0.8);
+      border: 1px solid var(--primary);
+      box-shadow: var(--glow);
+      backdrop-filter: blur(5px);
+    }
+    
+    .cyber-btn {
+      background: linear-gradient(to right, var(--secondary), var(--primary));
+      border: 1px solid var(--accent);
+      font-family: 'Orbitron', sans-serif;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    
+    .cyber-btn:hover {
+      box-shadow: var(--glow);
+      transform: translateY(-2px);
+    }
+    
+    .cyber-btn:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: 0.5s;
+    }
+    
+    .cyber-btn:hover:before {
+      left: 100%;
+    }
+    
+    .cyber-input {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--primary);
+      color: white;
+    }
+    
+    .cyber-input:focus {
+      box-shadow: var(--glow);
+      outline: none;
+    }
+    
+    .grid-pattern {
+      background-image: linear-gradient(rgba(0, 179, 255, 0.1) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0, 179, 255, 0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    .cyber-progress {
+      height: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--primary);
+      overflow: hidden;
+      border-radius: 5px;
+    }
+    
+    .cyber-progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, var(--accent), var(--primary));
+      transition: width 60s linear;
+      border-radius: 5px;
+    }
+    
+    .option-btn {
+      transition: all 0.3s;
+    }
+    
+    .option-btn:hover {
+      transform: translateX(5px);
+    }
+    
+    .option-btn.correct {
+      background: rgba(0, 255, 100, 0.3);
+      border-color: #00ff64;
+      box-shadow: 0 0 10px #00ff64;
+    }
+    
+    .option-btn.incorrect {
+      background: rgba(255, 0, 80, 0.3);
+      border-color: #ff0050;
+      box-shadow: 0 0 10px #ff0050;
+    }
+    
+    .score-animation {
+      animation: scorePopup 0.5s ease-out;
+    }
+    
+    @keyframes scorePopup {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.5); }
+      100% { transform: scale(1); }
+    }
+    
+    .glitch-effect {
+      position: relative;
+    }
+    
+    .glitch-effect:after {
+      content: attr(data-text);
+      position: absolute;
+      left: 2px;
+      text-shadow: -1px 0 red;
+      top: 0;
+      color: white;
+      overflow: hidden;
+      clip: rect(0, 900px, 0, 0);
+      animation: glitch-anim 2s infinite linear alternate-reverse;
+    }
+    
+    @keyframes glitch-anim {
+      0% { clip: rect(44px, 9999px, 56px, 0); } 5% { clip: rect(36px, 9999px, 4px, 0); } 10% { clip: rect(85px, 9999px, 59px, 0); } 15% { clip: rect(20px, 9999px, 78px, 0); } 20% { clip: rect(63px, 9999px, 26px, 0); } 25% { clip: rect(45px, 9999px, 13px, 0); } 30% { clip: rect(76px, 9999px, 73px, 0); } 35% { clip: rect(5px, 9999px, 29px, 0); } 40% { clip: rect(26px, 9999px, 74px, 0); } 45% { clip: rect(89px, 9999px, 11px, 0); } 50% { clip: rect(50px, 9999px, 84px, 0); } 55% { clip: rect(23px, 9999px, 56px, 0); } 60% { clip: rect(80px, 9999px, 3px, 0); } 65% { clip: rect(68px, 9999px, 16px, 0); } 70% { clip: rect(90px, 9999px, 58px, 0); } 75% { clip: rect(10px, 9999px, 13px, 0); } 80% { clip: rect(37px, 9999px, 53px, 0); } 85% { clip: rect(80px, 9999px, 69px, 0); } 90% { clip: rect(16px, 9999px, 38px, 0); } 95% { clip: rect(69px, 9999px, 43px, 0); } 100% { clip: rect(41px, 9999px, 36px, 0); }
+    }
+    
+    .selected-item {
+      border: 2px solid var(--highlight);
+      box-shadow: var(--highlight-glow);
+      transform: translateY(-2px);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .selected-item:before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border: 2px solid var(--highlight);
+      border-radius: 0.375rem;
+      animation: pulseHighlight 1.5s infinite;
+      z-index: -1;
+    }
+    
+    @keyframes pulseHighlight {
+      0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; }
+    }
+    
+    .home-btn {
+      background: rgba(0, 102, 204, 0.3);
+      border: 1px solid var(--accent);
+      transition: all 0.3s;
+    }
+    
+    .home-btn:hover {
+      background: rgba(0, 102, 204, 0.5);
+      box-shadow: var(--glow);
+    }
+
+    .feedback-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="grid-pattern"></div>
+  
+  <div class="container mx-auto px-4 py-8">
+    <!-- Main App Container -->
+    <div id="app" class="max-w-4xl mx-auto">
+      <!-- Start Screen -->
+      <div id="start-screen" class="cyber-panel p-8 rounded-lg">
+        <h1 class="checkpoint-title text-4xl md:text-6xl text-center mb-2 glitch-effect" data-text="英Hack">英Hack</h1>
+        <p class="text-center mb-4 text-gray-300">中学2年 1学期 - タイムアタック</p>
+        <p class="text-center mb-8 text-gray-400">60秒で何問正解できるか挑戦しよう！</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="cyber-panel p-4 rounded-lg">
+            <h2 class="cyber-title text-xl mb-3 text-center text-primary">学習分野</h2>
+            <div class="space-y-2">
+              <button class="category-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-category="verbs">動詞 (Verbs)</button>
+              <button class="category-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-category="nouns_adjectives">名詞・形容詞など</button>
+              <button class="category-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-category="grammar">文法 (Grammar)</button>
+              <button class="category-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-category="idioms_expressions">熟語・会話表現</button>
+              <button class="category-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-category="comprehensive">総合問題</button>
+            </div>
+          </div>
+          
+          <div class="cyber-panel p-4 rounded-lg">
+            <h2 class="cyber-title text-xl mb-3 text-center text-primary">問題モード</h2>
+            <div class="space-y-2">
+              <button class="mode-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-mode="multiple-choice">選択問題</button>
+              <button class="mode-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-mode="typing">入力問題</button>
+              <button class="mode-btn cyber-btn w-full py-2 px-4 rounded-md text-left" data-mode="ordering">並べ替え問題</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button id="start-btn" class="cyber-btn py-3 px-8 rounded-md text-lg">開始</button>
+        </div>
+      </div>
+      
+      <!-- Game Screen -->
+      <div id="game-screen" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <div class="cyber-panel px-4 py-2 rounded-md">
+            <span class="text-primary">問題:</span> <span id="question-counter">1</span>
+          </div>
+          <div class="cyber-panel px-4 py-2 rounded-md">
+            <span class="text-primary">正解数:</span> <span id="score">0</span>
+          </div>
+          <div class="cyber-panel px-4 py-2 rounded-md">
+            <span class="text-primary">時間:</span> <span id="timer">60</span>
+          </div>
+        </div>
+        
+        <div class="cyber-panel p-6 rounded-lg mb-4">
+          <div class="cyber-progress mb-4">
+            <div id="time-bar" class="cyber-progress-bar w-full"></div>
+          </div>
+          
+          <h2 id="question-text" class="text-xl mb-4 min-h-[56px]"></h2>
+          
+          <!-- Feedback inside question panel -->
+          <div id="feedback-container" class="hidden text-center my-4">
+              <div id="feedback-text" class="mb-2 text-2xl font-bold"></div>
+              <div id="correct-answer" class="text-accent text-lg"></div>
+          </div>
+          
+          <!-- Multiple Choice Mode -->
+          <div id="multiple-choice-container" class="hidden space-y-3">
+            <div id="options-container" class="space-y-2"></div>
+          </div>
+          
+          <!-- Typing Mode -->
+          <div id="typing-container" class="hidden">
+            <input type="text" id="typing-input" class="cyber-input w-full py-2 px-4 rounded-md mb-3" placeholder="回答を英語で入力してください...">
+            <button id="typing-submit" class="cyber-btn py-2 px-4 rounded-md">回答する</button>
+          </div>
+          
+          <!-- Ordering Mode -->
+          <div id="ordering-container" class="hidden">
+            <div id="ordering-options" class="flex flex-wrap gap-2 mb-4 p-2 bg-black bg-opacity-20 rounded-md min-h-[50px]"></div>
+            <div id="ordering-answer" class="border border-dashed border-primary p-4 rounded-md min-h-[50px] mb-4 flex flex-wrap gap-2"></div>
+            <button id="ordering-submit" class="cyber-btn py-2 px-4 rounded-md">回答する</button>
+          </div>
+        </div>
+        
+        <div class="flex justify-center items-center">
+           <button class="home-btn py-2 px-4 rounded-md text-sm" id="game-home-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+            トップに戻る
+          </button>
+        </div>
+      </div>
+      
+      <!-- Results Screen -->
+      <div id="results-screen" class="hidden cyber-panel p-8 rounded-lg text-center">
+        <h2 class="checkpoint-title text-3xl mb-4" data-text="終了！">終了！</h2>
+        
+        <div class="mb-6">
+          <div class="text-5xl font-bold mb-2" id="final-score">0</div>
+          <div class="text-xl mb-4">正解数</div>
+          <div class="text-2xl mb-2" id="rank-text">ランク: S</div>
+          <div id="rank-comment" class="text-gray-300">素晴らしい！英語マスターだ！</div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="cyber-panel p-3 rounded-md">
+            <div class="text-primary">解答数</div>
+            <div class="text-2xl" id="answered-count">0</div>
+          </div>
+          <div class="cyber-panel p-3 rounded-md">
+            <div class="text-primary">正答率</div>
+            <div class="text-2xl" id="accuracy">0%</div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center items-center gap-4">
+          <button class="home-btn py-3 px-6 rounded-md" id="results-home-btn">
+            トップに戻る
+          </button>
+          <button id="restart-btn" class="cyber-btn py-3 px-8 rounded-md">もう一度挑戦</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 問題データベースは変更しないので省略します
+    const questionDatabase = {
+      standard: { 
+        'verbs': [
+          { type: 'multiple-choice', question: '「・・・を見つける」という意味の動詞は？', answer: 'find', options: ['find', 'leave', 'ask', 'weigh'] },
+          { type: 'multiple-choice', question: 'We ( ) a cat in the park yesterday. 「私たちは昨日公園でネコを見つけました」', answer: 'found', options: ['found', 'find', 'finding', 'finds'] },
+          { type: 'multiple-choice', question: '「・・・を経験する」という意味の動詞は？', answer: 'experience', options: ['experience', 'communicate', 'create', 'reflect'] },
+          { type: 'multiple-choice', question: '「・・・の重さがある」という意味の動詞は？', answer: 'weigh', options: ['weigh', 'add', 'order', 'shop'] },
+          { type: 'multiple-choice', question: '「連絡する、意思の疎通をする」という意味の動詞は？', answer: 'communicate', options: ['communicate', 'change', 'forget', 'choose'] },
+          { type: 'multiple-choice', question: '「変わる、変化する」という意味の動詞は？', answer: 'change', options: ['change', 'create', 'add', 'ask'] },
+          { type: 'multiple-choice', question: '「・・・を創造する」という意味の動詞は？', answer: 'create', options: ['create', 'shop', 'arrive', 'leave'] },
+          { type: 'multiple-choice', question: 'Let\'s go ( ). 「買い物をしに行きましょう」', answer: 'shopping', options: ['shopping', 'shop', 'shopped', 'shops'] },
+          { type: 'multiple-choice', question: '「到着する」という意味の動詞は？', answer: 'arrive', options: ['arrive', 'leave', 'order', 'add'] },
+          { type: 'multiple-choice', question: '「去る、出発する」という意味の動詞は？', answer: 'leave', options: ['leave', 'arrive', 'forget', 'choose'] },
+          { type: 'multiple-choice', question: '「・・・を注文する」という意味の動詞は？', answer: 'order', options: ['order', 'add', 'ask', 'play'] },
+          { type: 'multiple-choice', question: '「(〜に)・・・を加える」という意味の動詞は？', answer: 'add', options: ['add', 'reflect', 'weigh', 'shop'] },
+          { type: 'multiple-choice', question: '「(・・・を)忘れる」という意味の動詞は？', answer: 'forget', options: ['forget', 'choose', 'find', 'play'] },
+          { type: 'multiple-choice', question: '「・・・を選ぶ」という意味の動詞は？', answer: 'choose', options: ['choose', 'chose', 'change', 'create'] },
+          { type: 'multiple-choice', question: 'She ( ) this sweater yesterday. 「彼女は昨日このセーターを選びました」', answer: 'chose', options: ['chose', 'choose', 'choosing', 'chooses'] },
+          { type: 'multiple-choice', question: '「(物事・考えなど)を反映する」という意味の動詞は？', answer: 'reflect', options: ['reflect', 'ask', 'find', 'weigh'] },
+          { type: 'multiple-choice', question: 'I ( ) Ken for help. 「私は健に助けを求めました」', answer: 'asked', options: ['asked', 'ask', 'asking', 'asks'] },
+          { type: 'multiple-choice', question: 'Yui ( ) with her dog yesterday. 「結衣は昨日彼女のイヌと遊びました」', answer: 'played', options: ['played', 'play', 'playing', 'plays'] },
+          { type: 'multiple-choice', question: 'I will ( ) you tomorrow. 「明日電話します」', answer: 'call', options: ['call', 'called', 'calling', 'calls'] },
+          { type: 'multiple-choice', question: 'He is going to ( ) his friends next Sunday. 「彼は次の日曜日、友達に会う予定です」', answer: 'meet', options: ['meet', 'met', 'meeting', 'meets'] },
+          
+          { type: 'typing', question: '「見つける」を英語で入力しなさい。', answer: 'find' },
+          { type: 'typing', question: 'find の過去形を入力しなさい。', answer: 'found' },
+          { type: 'typing', question: '「経験する」を英語で入力しなさい。', answer: 'experience' },
+          { type: 'typing', question: '「重さがある」を英語で入力しなさい。', answer: 'weigh' },
+          { type: 'typing', question: '「意思の疎通をする」を英語で入力しなさい。', answer: 'communicate' },
+          { type: 'typing', question: '「変わる」を英語で入力しなさい。', answer: 'change' },
+          { type: 'typing', question: '「創造する」を英語で入力しなさい。', answer: 'create' },
+          { type: 'typing', question: '「買い物をする」を英語で入力しなさい。', answer: 'shop' },
+          { type: 'typing', question: '「到着する」を英語で入力しなさい。', answer: 'arrive' },
+          { type: 'typing', question: '「出発する」を英語で入力しなさい。', answer: 'leave' },
+          { type: 'typing', question: '「注文する」を英語で入力しなさい。', answer: 'order' },
+          { type: 'typing', question: '「加える」を英語で入力しなさい。', answer: 'add' },
+          { type: 'typing', question: '「忘れる」を英語で入力しなさい。', answer: 'forget' },
+          { type: 'typing', question: '「選ぶ」を英語で入力しなさい。', answer: 'choose' },
+          { type: 'typing', question: 'choose の過去形を入力しなさい。', answer: 'chose' },
+          { type: 'typing', question: '「反映する」を英語で入力しなさい。', answer: 'reflect' },
+          { type: 'typing', question: '「たのむ、たずねる」を英語で入力しなさい。', answer: 'ask' },
+          { type: 'typing', question: '「遊ぶ」を英語で入力しなさい。', answer: 'play' },
+          { type: 'typing', question: 'We ( ) to create the future. 「私たちは未来を創造しようとしています」', answer: 'try' },
+          { type: 'typing', question: 'I ( ) a wonderful life in America. 「私はアメリカですばらしい生活を経験しました」', answer: 'experienced' },
+
+          { type: 'ordering', question: '（あなたはあなたのくつを見つけましたか。）', answer: ['Did', 'you', 'find', 'your', 'shoes?'] },
+          { type: 'ordering', question: '（私たちは公園でネコを見つけました。）', answer: ['We', 'found', 'a', 'cat', 'in', 'the', 'park.'] },
+          { type: 'ordering', question: '（彼らは英語で意思の疎通をします。）', answer: ['They', 'communicate', 'in', 'English.'] },
+          { type: 'ordering', question: '（私たちの計画はその出来事のあと変わりました。）', answer: ['Our', 'plan', 'changed', 'after', 'the', 'event.'] },
+          { type: 'ordering', question: '（買い物をしに行きましょう。）', answer: ['Let\'s', 'go', 'shopping.'] },
+          { type: 'ordering', question: '（電車は5時に駅に到着しました。）', answer: ['The', 'train', 'arrived', 'at', 'the', 'station', 'at', 'five.'] },
+          { type: 'ordering', question: '（あなたは何時に出発するつもりですか。）', answer: ['What', 'time', 'are', 'you', 'going', 'to', 'leave?'] },
+          { type: 'ordering', question: '（私はハンバーガーを2つ注文するつもりです。）', answer: ['I', 'will', 'order', 'two', 'hamburgers.'] },
+          { type: 'ordering', question: '（水をいくらか加えなさい。）', answer: ['Add', 'some', 'water.'] },
+          { type: 'ordering', question: '（彼の名前を忘れないで。）', answer: ['Don\'t', 'forget', 'his', 'name.'] },
+          { type: 'ordering', question: '（彼女はどちらを選びましたか。）', answer: ['Which', 'did', 'she', 'choose?'] },
+          { type: 'ordering', question: '（この歌は市の歴史を反映しています。）', answer: ['This', 'song', 'reflects', 'the', 'city\'s', 'history.'] },
+          { type: 'ordering', question: '（私は健に助けを求めました。）', answer: ['I', 'asked', 'Ken', 'for', 'help.'] },
+          { type: 'ordering', question: '（彼女はこのセーターを選びました。）', answer: ['She', 'chose', 'this', 'sweater.'] },
+          { type: 'ordering', question: '（結衣は彼女のイヌと遊びました。）', answer: ['Yui', 'played', 'with', 'her', 'dog.'] },
+          { type: 'ordering', question: '（私はシェフになりたいです。）', answer: ['I', 'want', 'to', 'be', 'a', 'chef.'] },
+          { type: 'ordering', question: '（彼は明日、野球をするつもりです。）', answer: ['He', 'will', 'play', 'baseball', 'tomorrow.'] },
+          { type: 'ordering', question: '（私たちは来週、その映画を見る予定です。）', answer: ['We', 'are', 'going', 'to', 'see', 'the', 'movie', 'next', 'week.'] },
+          { type: 'ordering', question: '（あなたは英語を話す必要があります。）', answer: ['You', 'must', 'speak', 'English.'] },
+          { type: 'ordering', question: '（私は本を読むことが好きです。）', answer: ['I', 'like', 'to', 'read', 'books.'] },
+        ],
+        'nouns_adjectives': [
+          { type: 'multiple-choice', question: '「中国語」という意味の名詞は？', answer: 'Chinese', options: ['Chinese', 'Singapore', 'India', 'Italy'] },
+          { type: 'multiple-choice', question: 'I visited ( ) last month. 「私は先月シンガポールを訪れました」', answer: 'Singapore', options: ['Singapore', 'Chinese', 'India', 'Italy'] },
+          { type: 'multiple-choice', question: '「休日、休暇」という意味の名詞は？', answer: 'holiday', options: ['holiday', 'seafood', 'reservation', 'culture'] },
+          { type: 'multiple-choice', question: '「シーフード」という意味の名詞は？', answer: 'seafood', options: ['seafood', 'cookie', 'sauce', 'flavor'] },
+          { type: 'multiple-choice', question: 'Do you have a ( )? 「ご予約をされていますか」', answer: 'reservation', options: ['reservation', 'flight', 'example', 'information'] },
+          { type: 'multiple-choice', question: '「文化」という意味の名詞は？', answer: 'culture', options: ['culture', 'language', 'area', 'climate'] },
+          { type: 'multiple-choice', question: '「シェフ、コック長」という意味の名詞は？', answer: 'chef', options: ['chef', 'resident', 'traveler', 'manufacturer'] },
+          { type: 'multiple-choice', question: 'This ( ) is delicious. 「このソースはとてもおいしいです」', answer: 'sauce', options: ['sauce', 'salt', 'butter', 'noodle'] },
+          { type: 'multiple-choice', question: 'Can I see the ( )? 「メニューを見てもいいですか」', answer: 'menu', options: ['menu', 'note', 'tag', 'speech'] },
+          { type: 'multiple-choice', question: '「言語、言葉」という意味の名詞は？', answer: 'language', options: ['language', 'speech', 'information', 'note'] },
+          { type: 'multiple-choice', question: 'This painting is my ( ). 「この絵は私の大好きなものです」', answer: 'favorite', options: ['favorite', 'various', 'foreign', 'own'] },
+          { type: 'multiple-choice', question: 'I love this ( ). 「私はこの味が大好きです」', answer: 'flavor', options: ['flavor', 'culture', 'climate', 'career'] },
+          { type: 'multiple-choice', question: '「塩、食塩」という意味の名詞は？', answer: 'salt', options: ['salt', 'sauce', 'butter', 'seafood'] },
+          { type: 'multiple-choice', question: '「気候」という意味の名詞は？', answer: 'climate', options: ['climate', 'culture', 'area', 'nature'] },
+          { type: 'multiple-choice', question: 'We use ( ) when we eat. 「私たちは食べるときにはしを使います」', answer: 'chopsticks', options: ['chopsticks', 'noodles', 'toppings', 'cookies'] },
+          { type: 'multiple-choice', question: '「情報」という意味の名詞は？', answer: 'information', options: ['information', 'illustration', 'variation', 'reservation'] },
+          { type: 'multiple-choice', question: 'She has beautiful ( ) hair. 「エミリーは美しい金色の髪をしています」', answer: 'golden', options: ['golden', 'colorful', 'thick', 'foreign'] },
+          { type: 'multiple-choice', question: 'He has a ( ) plan. 「彼にはちがう計画があります」', answer: 'different', options: ['different', 'same', 'own', 'various'] },
+          { type: 'multiple-choice', question: 'Would you like ( ) one? 「もう1ついかがですか」', answer: 'another', options: ['another', 'other', 'different', 'same'] },
+          { type: 'multiple-choice', question: 'Are you ( )? 「わくわくしていますか」', answer: 'excited', options: ['excited', 'surprised', 'interested', 'happy'] },
+
+          { type: 'typing', question: '「シンガポール」を英語で入力しなさい。', answer: 'Singapore' },
+          { type: 'typing', question: '「休日」を英語で入力しなさい。', answer: 'holiday' },
+          { type: 'typing', question: '「シーフード」を英語で入力しなさい。', answer: 'seafood' },
+          { type: 'typing', question: '「予約」を英語で入力しなさい。', answer: 'reservation' },
+          { type: 'typing', question: '「文化」を英語で入力しなさい。', answer: 'culture' },
+          { type: 'typing', question: '「インド」を英語で入力しなさい。', answer: 'India' },
+          { type: 'typing', question: '「ソース」を英語で入力しなさい。', answer: 'sauce' },
+          { type: 'typing', question: '「イタリア」を英語で入力しなさい。', answer: 'Italy' },
+          { type: 'typing', question: '「メニュー」を英語で入力しなさい。', answer: 'menu' },
+          { type: 'typing', question: '「飛行機の便」を英語で入力しなさい。', answer: 'flight' },
+          { type: 'typing', question: '「例」を英語で入力しなさい。', answer: 'example' },
+          { type: 'typing', question: '「言語」を英語で入力しなさい。', answer: 'language' },
+          { type: 'typing', question: '「地域」を英語で入力しなさい。', answer: 'area' },
+          { type: 'typing', question: '「絵」を英語で入力しなさい。', answer: 'painting' },
+          { type: 'typing', question: '「かべ」を英語で入力しなさい。', answer: 'wall' },
+          { type: 'typing', question: '「風味」を英語で入力しなさい。', answer: 'flavor' },
+          { type: 'typing', question: '「塩」を英語で入力しなさい。', answer: 'salt' },
+          { type: 'typing', question: '「気候」を英語で入力しなさい。', answer: 'climate' },
+          { type: 'typing', question: '「情報」を英語で入力しなさい。', answer: 'information' },
+          { type: 'typing', question: '「わくわくした」を英語で入力しなさい。', answer: 'excited' },
+
+          { type: 'ordering', question: '（私はシーフードが大好きです。）', answer: ['I', 'like', 'seafood', 'very', 'much.'] },
+          { type: 'ordering', question: '（ケイトは日本の文化が大好きです。）', answer: ['Kate', 'loves', 'Japanese', 'culture.'] },
+          { type: 'ordering', question: '（私の父は今インドに住んでいます。）', answer: ['My', 'father', 'lives', 'in', 'India', 'now.'] },
+          { type: 'ordering', question: '（楽しい空の旅を。）', answer: ['Have', 'a', 'nice', 'flight.'] },
+          { type: 'ordering', question: '（彼は5か国語を話すことができます。）', answer: ['He', 'can', 'speak', 'five', 'languages.'] },
+          { type: 'ordering', question: '（あの地域はいつもこみ合っています。）', answer: ['That', 'area', 'is', 'always', 'crowded.'] },
+          { type: 'ordering', question: '（かべにはたくさんの写真があります。）', answer: ['There', 'are', 'many', 'photos', 'on', 'the', 'wall.'] },
+          { type: 'ordering', question: '（由美のスピーチはすばらしかったです。）', answer: ['Yumi\'s', 'speech', 'was', 'wonderful.'] },
+          { type: 'ordering', question: '（私はその新しい先生について情報を持っていません。）', answer: ['I', 'have', 'no', 'information', 'about', 'the', 'new', 'teacher.'] },
+          { type: 'ordering', question: '（あなたはバスで空港に行くことができます。）', answer: ['You', 'can', 'go', 'to', 'the', 'airport', 'by', 'bus.'] },
+          { type: 'ordering', question: '（この絵本はとても人気があります。）', answer: ['This', 'picture', 'book', 'is', 'very', 'popular.'] },
+          { type: 'ordering', question: '（エミリーは美しい金色の髪をしています。）', answer: ['Emily', 'has', 'beautiful', 'golden', 'hair.'] },
+          { type: 'ordering', question: '（私は彼を見て驚きました。）', answer: ['I', 'was', 'surprised', 'to', 'see', 'him.'] },
+          { type: 'ordering', question: '（公園にはいろいろな鳥がいます。）', answer: ['There', 'are', 'various', 'birds', 'in', 'the', 'park.'] },
+          { type: 'ordering', question: '（私は外国の言葉を勉強したいと思っています。）', answer: ['I', 'want', 'to', 'study', 'a', 'foreign', 'language.'] },
+          { type: 'ordering', question: '（これは国際的な行事です。）', answer: ['This', 'is', 'an', 'international', 'event.'] },
+          { type: 'ordering', question: '（あなたはそこでたくさんの色彩に富んだ花を見ることができます。）', answer: ['You', 'can', 'see', 'many', 'colorful', 'flowers', 'there.'] },
+          { type: 'ordering', question: '（あなたのおすすめのレストランは何ですか。）', answer: ['What', 'is', 'your', 'recommended', 'restaurant?'] },
+          { type: 'ordering', question: '（実は、私は少し緊張していました。）', answer: ['Actually,', 'I', 'was', 'a', 'little', 'nervous.'] },
+          { type: 'ordering', question: '（雨はすぐにやむでしょう。）', answer: ['The', 'rain', 'will', 'stop', 'soon.'] },
+        ],
+        'grammar': [
+          { type: 'multiple-choice', question: 'I ( ) visit my grandmother next Sunday. 「来週の日曜、祖母を訪ねるつもりです」', answer: 'will', options: ['will', 'am', 'do', 'was'] },
+          { type: 'multiple-choice', question: 'He is ( ) to buy a new bike. 「彼は新しい自転車を買う予定です」', answer: 'going', options: ['going', 'go', 'goes', 'went'] },
+          { type: 'multiple-choice', question: 'You ( ) be quiet in the library. 「図書館では静かにしなければなりません」', answer: 'must', options: ['must', 'may', 'will', 'are'] },
+          { type: 'multiple-choice', question: 'You ( ) to finish your homework. 「宿題を終える必要があります」', answer: 'have', options: ['have', 'must', 'should', 'can'] },
+          { type: 'multiple-choice', question: 'I like ( ) books. 「私は本を読むことが好きです」', answer: 'to read', options: ['to read', 'reading', 'read', 'reads'] },
+          { type: 'multiple-choice', question: 'My hobby is ( ) pictures. 「私の趣味は絵をかくことです」', answer: 'drawing', options: ['drawing', 'draw', 'to draw', 'drew'] },
+          { type: 'multiple-choice', question: 'He went to the park ( ) soccer. 「彼はサッカーをするために公園へ行きました」', answer: 'to play', options: ['to play', 'playing', 'play', 'for play'] },
+          { type: 'multiple-choice', question: 'There is a book ( ) on the desk. 「机の上に読むべき本があります」', answer: 'to read', options: ['to read', 'reading', 'for read', 'read'] },
+          { type: 'multiple-choice', question: 'I was happy ( ) the news. 「その知らせを聞いて嬉しかった」', answer: 'to hear', options: ['to hear', 'hearing', 'hear', 'heard'] },
+          { type: 'multiple-choice', question: 'She was studying ( ) I called her. 「私が電話したとき、彼女は勉強していました」', answer: 'when', options: ['when', 'if', 'that', 'because'] },
+          { type: 'multiple-choice', question: '( ) it is sunny tomorrow, let\'s go hiking. 「もし明日晴れたら、ハイキングに行こう」', answer: 'If', options: ['If', 'When', 'Because', 'That'] },
+          { type: 'multiple-choice', question: 'I think ( ) this book is interesting. 「私はこの本は面白いと思います」', answer: 'that', options: ['that', 'which', 'who', 'if'] },
+          { type: 'multiple-choice', question: 'I couldn\'t go out ( ) it was raining. 「雨が降っていたので、外出できませんでした」', answer: 'because', options: ['because', 'if', 'when', 'that'] },
+          { type: 'multiple-choice', question: 'You ( ) not run in the classroom. 「教室で走ってはいけません」', answer: 'must', options: ['must', 'don\'t have to', 'may', 'will'] },
+          { type: 'multiple-choice', question: 'You ( ) worry about it. 「心配する必要はありません」', answer: 'don\'t have to', options: ['don\'t have to', 'must not', 'should not', 'cannot'] },
+          { type: 'multiple-choice', question: '( ) I use your pen? 「ペンをお借りしてもいいですか」', answer: 'May', options: ['May', 'Do', 'Will', 'Should'] },
+          { type: 'multiple-choice', question: 'She will be a doctor ( ) the future. 「彼女は将来医者になるでしょう」', answer: 'in', options: ['in', 'at', 'on', 'for'] },
+          { type: 'multiple-choice', question: 'Look at the boy ( ) a red cap. 「赤い帽子をかぶっている男の子を見て」', answer: 'with', options: ['with', 'in', 'on', 'of'] },
+          { type: 'multiple-choice', question: 'How about ( ) to the movies? 「映画に行くのはどうですか」', answer: 'going', options: ['going', 'go', 'to go', 'went'] },
+          { type: 'multiple-choice', question: 'Thank you for ( ) me. 「私を招待してくれてありがとう」', answer: 'inviting', options: ['inviting', 'invite', 'to invite', 'invited'] },
+
+          { type: 'typing', question: 'He is going ( ) be a teacher. 「彼は先生になる予定です」', answer: 'to' },
+          { type: 'typing', question: 'I ( ) clean my room tomorrow. 「明日、部屋を掃除するつもりです」', answer: 'will' },
+          { type: 'typing', question: 'You ( ) to study English hard. 「あなたは英語を熱心に勉強する必要があります」', answer: 'have' },
+          { type: 'typing', question: 'She likes ( ) songs. 「彼女は歌を歌うことが好きです」', answer: 'singing' },
+          { type: 'typing', question: 'My dream is ( ) be a pilot. 「私の夢はパイロットになることです」', answer: 'to' },
+          { type: 'typing', question: 'I went to the library ( ) study. 「私は勉強するために図書館へ行きました」', answer: 'to' },
+          { type: 'typing', question: 'I have a lot of homework to ( ). 「私にはやるべき宿題がたくさんあります」', answer: 'do' },
+          { type: 'typing', question: 'He was sad ( ) hear the story. 「彼はその話を聞いて悲しみました」', answer: 'to' },
+          { type: 'typing', question: 'Call me ( ) you get home. 「家に着いたら電話してください」', answer: 'when' },
+          { type: 'typing', question: '( ) you are free, please help me. 「もし時間があれば、手伝ってください」', answer: 'If' },
+          { type: 'typing', question: 'He said ( ) he was tired. 「彼は疲れていると言いました」', answer: 'that' },
+          { type: 'typing', question: 'She was late ( ) she missed the bus. 「彼女はバスに乗り遅れたので、遅刻しました」', answer: 'because' },
+          { type: 'typing', question: 'We ( ) not make a noise here. 「ここで音を立ててはいけません」', answer: 'must' },
+          { type: 'typing', question: 'He doesn\'t ( ) to get up early. 「彼は早く起きる必要はありません」', answer: 'have' },
+          { type: 'typing', question: 'She will come back ( ) a week. 「彼女は1週間で戻ってきます」', answer: 'in' },
+          { type: 'typing', question: 'What ( ) you going to do this weekend? 「今週末は何をする予定ですか」', answer: 'are' },
+          { type: 'typing', question: 'We enjoyed ( ) tennis yesterday. 「私たちは昨日テニスを楽しみました」', answer: 'playing' },
+          { type: 'typing', question: 'Let\'s start ( ) we are ready. 「準備ができたら始めましょう」', answer: 'when' },
+          { type: 'typing', question: 'She is good at ( ) English. 「彼女は英語を話すのが得意です」', answer: 'speaking' },
+          { type: 'typing', question: 'He is looking forward to ( ) you. 「彼はあなたに会うのを楽しみにしています」', answer: 'seeing' },
+
+          { type: 'ordering', question: '（私は来週、京都を訪れるつもりです。）', answer: ['I', 'will', 'visit', 'Kyoto', 'next', 'week.'] },
+          { type: 'ordering', question: '（彼は明日、手紙を書く予定です。）', answer: ['He', 'is', 'going', 'to', 'write', 'a', 'letter', 'tomorrow.'] },
+          { type: 'ordering', question: '（あなたはこの薬を飲まなければなりません。）', answer: ['You', 'must', 'take', 'this', 'medicine.'] },
+          { type: 'ordering', question: '（私たちは早く起きる必要があります。）', answer: ['We', 'have', 'to', 'get', 'up', 'early.'] },
+          { type: 'ordering', question: '（彼は本を読むことが好きです。）', answer: ['He', 'likes', 'to', 'read', 'books.'] },
+          { type: 'ordering', question: '（音楽を聴くことは楽しいです。）', answer: ['Listening', 'to', 'music', 'is', 'fun.'] },
+          { type: 'ordering', question: '（私は何か食べるものが欲しいです。）', answer: ['I', 'want', 'something', 'to', 'eat.'] },
+          { type: 'ordering', question: '（彼はあなたに会えて喜んでいました。）', answer: ['He', 'was', 'happy', 'to', 'see', 'you.'] },
+          { type: 'ordering', question: '（私が家に帰ったとき、母は料理をしていました。）', answer: ['When', 'I', 'came', 'home,', 'my', 'mother', 'was', 'cooking.'] },
+          { type: 'ordering', question: '（もし雨なら、私は家にいます。）', answer: ['If', 'it', 'rains,', 'I', 'will', 'stay', 'home.'] },
+          { type: 'ordering', question: '（私は彼が正しいと思います。）', answer: ['I', 'think', 'that', 'he', 'is', 'right.'] },
+          { type: 'ordering', question: '（私はお腹が空いていたので、たくさん食べました。）', answer: ['I', 'ate', 'a', 'lot', 'because', 'I', 'was', 'hungry.'] },
+          { type: 'ordering', question: '（あなたはここで写真を撮ってはいけません。）', answer: ['You', 'must', 'not', 'take', 'pictures', 'here.'] },
+          { type: 'ordering', question: '（あなたは急ぐ必要はありません。）', answer: ['You', 'don\'t', 'have', 'to', 'hurry.'] },
+          { type: 'ordering', question: '（窓を開けてもよろしいですか。）', answer: ['May', 'I', 'open', 'the', 'window?'] },
+          { type: 'ordering', question: '（彼女は将来、看護師になるでしょう。）', answer: ['She', 'will', 'be', 'a', 'nurse', 'in', 'the', 'future.'] },
+        ],
+        'idioms_expressions': [
+          { type: 'multiple-choice', question: 'Bob is interested ( ) Japanese songs. 「ボブは日本の歌に興味があります」', answer: 'in', options: ['in', 'on', 'at', 'with'] },
+          { type: 'multiple-choice', question: 'Does Jane come ( ) Canada? 「ジェーンはカナダ出身ですか」', answer: 'from', options: ['from', 'to', 'in', 'at'] },
+          { type: 'multiple-choice', question: 'May I ask you a ( )? 「お願いがあるのですが」', answer: 'favor', options: ['favor', 'question', 'help', 'hand'] },
+          { type: 'multiple-choice', question: '( ) you open the door? 「ドアをあけてくださいませんか」', answer: 'Could', options: ['Could', 'Do', 'Are', 'May'] },
+          { type: 'multiple-choice', question: '( ) I use your pen? 「あなたのペンを使ってもよいですか」', answer: 'May', options: ['May', 'Do', 'Will', 'Am'] },
+          { type: 'multiple-choice', question: 'By the ( ), how was your weekend? 「ところで、あなたの週末はどうでしたか」', answer: 'way', options: ['way', 'road', 'street', 'path'] },
+          { type: 'multiple-choice', question: 'For ( ), she likes swimming. 「例えば、彼女は水泳が好きです」', answer: 'example', options: ['example', 'instance', 'case', 'sample'] },
+          { type: 'multiple-choice', question: 'How ( ) some coffee? 「コーヒーはどうですか」', answer: 'about', options: ['about', 'are', 'is', 'do'] },
+          { type: 'multiple-choice', question: 'Here ( ) your textbook. 「これがあなたの教科書です」', answer: 'is', options: ['is', 'are', 'am', 'be'] },
+          { type: 'multiple-choice', question: 'I\'d love ( ) visit your house. 「ぜひあなたの家を訪ねたいです」', answer: 'to', options: ['to', 'for', 'at', 'in'] },
+          { type: 'multiple-choice', question: 'Emi has many ( ) of shoes. 「恵美はたくさんの種類のくつを持っています」', answer: 'kinds', options: ['kinds', 'types', 'sorts', 'styles'] },
+          { type: 'multiple-choice', question: 'We named the dog Kuro ( ) its color. 「その色にちなんで犬をクロと名付けた」', answer: 'after', options: ['after', 'for', 'by', 'from'] },
+          { type: 'multiple-choice', question: 'See you ( ). 「またね」', answer: 'later', options: ['later', 'soon', 'again', 'tomorrow'] },
+          { type: 'multiple-choice', question: 'I am looking ( ) to seeing you. 「会えるのを楽しみにしています」', answer: 'forward', options: ['forward', 'for', 'up', 'at'] },
+          { type: 'multiple-choice', question: 'He can play the piano, the guitar, and so ( ). 「彼はピアノやギターなどをひけます」', answer: 'on', options: ['on', 'as', 'forth', 'in'] },
+          { type: 'multiple-choice', question: 'Could you help me ( ) my homework? 「宿題を手伝ってくれませんか」', answer: 'with', options: ['with', 'for', 'to', 'about'] },
+          { type: 'multiple-choice', question: 'We are going to have a party. ( ) you join us? 「パーティーをします。参加しませんか」', answer: 'Will', options: ['Will', 'Do', 'Are', 'Can'] },
+          { type: 'multiple-choice', question: 'What kind of music do you like? I like rock, for ( ). 「どんな音楽が好き？例えばロックが好きだよ」', answer: 'example', options: ['example', 'sure', 'course', 'instance'] },
+          { type: 'multiple-choice', question: 'I am looking for my keys. Can you ( ) me? 「鍵を探しています。手伝ってくれますか」', answer: 'help', options: ['help', 'see', 'look', 'find'] },
+          { type: 'multiple-choice', question: 'It\'s time ( ) lunch. 「昼食の時間です」', answer: 'for', options: ['for', 'to', 'at', 'of'] },
+
+          { type: 'typing', question: 'be interested ( ) ... : 「・・・に興味がある」', answer: 'in' },
+          { type: 'typing', question: 'come ( ) ... : 「・・・出身である」', answer: 'from' },
+          { type: 'typing', question: 'ask ... a ( ) : 「・・・にお願いする」', answer: 'favor' },
+          { type: 'typing', question: '( ) you ...? : 「・・・してくださいませんか」', answer: 'Could' },
+          { type: 'typing', question: '( ) I ...? : 「・・・してもよいですか」', answer: 'May' },
+          { type: 'typing', question: 'and so ( ) : 「・・・など」', answer: 'on' },
+          { type: 'typing', question: 'by the ( ) : 「ところで」', answer: 'way' },
+          { type: 'typing', question: 'for ( ) : 「例えば」', answer: 'example' },
+          { type: 'typing', question: 'How ( ) ...? : 「・・・はどうですか」', answer: 'about' },
+          { type: 'typing', question: 'Here ( ) ... : 「これが・・・です」 (単数)', answer: 'is' },
+          { type: 'typing', question: 'I\'d ( ) to ... : 「・・・したいのですが」', answer: 'love' },
+          { type: 'typing', question: 'See you ( ). 「また後でね」', answer: 'later' },
+          { type: 'typing', question: 'kind(s) ( ) ~ : 「・・・種類の〜」', answer: 'of' },
+          { type: 'typing', question: 'name ... ( ) ~ : 「〜にちなんで・・・と名づける」', answer: 'after' },
+          { type: 'typing', question: 'look forward ( ) ...ing : 「・・・を楽しみに待つ」', answer: 'to' },
+          { type: 'typing', question: 'a lot ( ) ... : 「たくさんの・・・」', answer: 'of' },
+          { type: 'typing', question: 'Why ( ) we ...? : 「・・・しませんか」', answer: 'don\'t' },
+          { type: 'typing', question: 'be good ( ) ...ing : 「・・・するのが得意だ」', answer: 'at' },
+          { type: 'typing', question: 'Thank you ( ) ...ing : 「・・・してくれてありがとう」', answer: 'for' },
+          { type: 'typing', question: 'It\'s time ( ) bed. 「寝る時間です」', answer: 'for' },
+          
+          { type: 'ordering', question: '（ボブは日本の歌に興味があります。）', answer: ['Bob', 'is', 'interested', 'in', 'Japanese', 'songs.'] },
+          { type: 'ordering', question: '（ジェーンはカナダ出身ですか。）', answer: ['Does', 'Jane', 'come', 'from', 'Canada?'] },
+          { type: 'ordering', question: '（私たちはそのイヌをその色にちなんでクロと名づけました。）', answer: ['We', 'named', 'the', 'dog', 'Kuro', 'after', 'its', 'color.'] },
+          { type: 'ordering', question: '（1つあなたにお願いしてもよろしいですか。）', answer: ['May', 'I', 'ask', 'you', 'a', 'favor?'] },
+          { type: 'ordering', question: '（ドアをあけてくださいませんか。）', answer: ['Could', 'you', 'open', 'the', 'door?'] },
+          { type: 'ordering', question: '（あなたのペンを使ってもよいですか。）', answer: ['May', 'I', 'use', 'your', 'pen?'] },
+          { type: 'ordering', question: '（ところで、あなたの週末はどうでしたか。）', answer: ['By', 'the', 'way,', 'how', 'was', 'your', 'weekend?'] },
+          { type: 'ordering', question: '（例えば、彼女は水泳が好きです。）', answer: ['For', 'example,', 'she', 'likes', 'swimming.'] },
+          { type: 'ordering', question: '（コーヒーはどうですか。）', answer: ['How', 'about', 'some', 'coffee?'] },
+          { type: 'ordering', question: '（これがあなたの教科書です。）', answer: ['Here', 'is', 'your', 'textbook.'] },
+          { type: 'ordering', question: '（あなたの家を訪ねたいのですが。）', answer: ['I\'d', 'love', 'to', 'visit', 'your', 'house.'] },
+          { type: 'ordering', question: '（また来週ね。）', answer: ['See', 'you', 'next', 'week.'] },
+          { type: 'ordering', question: '（恵美はたくさんの種類のくつを持っています。）', answer: ['Emi', 'has', 'many', 'kinds', 'of', 'shoes.'] },
+          { type: 'ordering', question: '（あなたに会うのを楽しみにしています。）', answer: ['I', 'am', 'looking', 'forward', 'to', 'seeing', 'you.'] },
+          { type: 'ordering', question: '（テニスをするのはどうですか。）', answer: ['How', 'about', 'playing', 'tennis?'] },
+        ]
+      },
+      // EXPERTはSTANDARDのコピーで代用（本来は難易度を上げる）
+      expert: {} 
+    };
+    questionDatabase.expert = JSON.parse(JSON.stringify(questionDatabase.standard));
+
+
+    // ゲーム状態
+    let gameState = {
+      category: null,
+      mode: null,
+      questions: [],
+      currentQuestionIndex: 0,
+      score: 0, // 正解数
+      answeredQuestions: 0, // 解答した問題数
+      timeLeft: 60,
+      timerInterval: null,
+      isGameActive: false
+    };
+
+    // DOM要素
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    const questionText = document.getElementById('question-text');
+    const questionCounter = document.getElementById('question-counter');
+    const scoreDisplay = document.getElementById('score');
+    const timerDisplay = document.getElementById('timer');
+    const timeBar = document.getElementById('time-bar');
+    const feedbackContainer = document.getElementById('feedback-container');
+    const feedbackText = document.getElementById('feedback-text');
+    const correctAnswerDisplay = document.getElementById('correct-answer');
+    const multipleChoiceContainer = document.getElementById('multiple-choice-container');
+    const typingContainer = document.getElementById('typing-container');
+    const orderingContainer = document.getElementById('ordering-container');
+    const finalScore = document.getElementById('final-score');
+    const rankText = document.getElementById('rank-text');
+    const rankComment = document.getElementById('rank-comment');
+    const answeredCount = document.getElementById('answered-count');
+    const accuracyDisplay = document.getElementById('accuracy');
+
+    // イベントリスナー
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('selected-item'));
+        btn.classList.add('selected-item');
+        gameState.category = btn.dataset.category;
+      });
+    });
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected-item'));
+        btn.classList.add('selected-item');
+        gameState.mode = btn.dataset.mode;
+      });
+    });
+
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('restart-btn').addEventListener('click', () => {
+        resultsScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+    });
+    document.getElementById('game-home-btn').addEventListener('click', returnToHome);
+    document.getElementById('results-home-btn').addEventListener('click', returnToHome);
+    document.getElementById('typing-submit').addEventListener('click', checkTypingAnswer);
+    document.getElementById('ordering-submit').addEventListener('click', checkOrderingAnswer);
+    document.getElementById('typing-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') checkTypingAnswer();
+    });
+
+    function returnToHome() {
+      if (gameState.isGameActive) {
+          clearInterval(gameState.timerInterval);
+          gameState.isGameActive = false;
+      }
+      gameScreen.classList.add('hidden');
+      resultsScreen.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+      gameState.category = null;
+      gameState.mode = null;
+      document.querySelectorAll('.selected-item').forEach(btn => btn.classList.remove('selected-item'));
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function startGame() {
+      if (!gameState.category || !gameState.mode) {
+        alert('分野と問題モードをすべて選択してください');
+        return;
+      }
+      
+      let allQuestionsForMode = [];
+      const difficulty = 'standard'; // 難易度選択を削除したため固定
+      if (gameState.category === 'comprehensive') {
+        allQuestionsForMode = Object.values(questionDatabase[difficulty]).flat();
+      } else {
+        allQuestionsForMode = questionDatabase[difficulty][gameState.category];
+      }
+      
+      const availableQuestions = allQuestionsForMode.filter(q => q.type === gameState.mode);
+      
+      if (!availableQuestions || availableQuestions.length === 0) {
+        alert('この組み合わせの問題はありません。');
+        return;
+      }
+      
+      gameState.questions = shuffleArray([...availableQuestions]);
+      
+      gameState.currentQuestionIndex = 0;
+      gameState.score = 0;
+      gameState.answeredQuestions = 0;
+      gameState.isGameActive = true;
+      
+      scoreDisplay.textContent = 0;
+      questionCounter.textContent = 1;
+      
+      startScreen.classList.add('hidden');
+      resultsScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+      
+      startGameTimer();
+      displayQuestion();
+    }
+
+    function displayQuestion() {
+        if (!gameState.isGameActive || gameState.currentQuestionIndex >= gameState.questions.length) {
+            endGame();
+            return;
+        }
+
+        const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+        questionText.textContent = currentQuestion.question;
+        
+        hideAllModeContainers();
+        feedbackContainer.classList.add('hidden');
+
+        switch (gameState.mode) {
+            case 'multiple-choice': displayMultipleChoice(currentQuestion); break;
+            case 'typing': displayTyping(); break;
+            case 'ordering': displayOrdering(currentQuestion); break;
+        }
+    }
+
+    function hideAllModeContainers() {
+      [multipleChoiceContainer, typingContainer, orderingContainer].forEach(c => c.style.display = 'none');
+    }
+
+    function displayMultipleChoice(question) {
+      multipleChoiceContainer.style.display = 'block';
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+      const shuffledOptions = shuffleArray([...question.options]);
+      
+      shuffledOptions.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn cyber-btn w-full py-3 px-4 rounded-md text-left';
+        btn.textContent = option;
+        btn.onclick = () => checkMultipleChoiceAnswer(option, btn);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function displayTyping() {
+      typingContainer.style.display = 'block';
+      const input = document.getElementById('typing-input');
+      input.value = '';
+      input.disabled = false;
+      document.getElementById('typing-submit').disabled = false;
+      input.focus();
+    }
+
+    function displayOrdering(question) {
+      orderingContainer.style.display = 'block';
+      const optionsContainer = document.getElementById('ordering-options');
+      const answerContainer = document.getElementById('ordering-answer');
+      optionsContainer.innerHTML = '';
+      answerContainer.innerHTML = '';
+      const shuffledOptions = shuffleArray([...question.answer]);
+
+      const moveWord = (word, from, to) => {
+        from.removeChild(word);
+        to.appendChild(word);
+      };
+
+      shuffledOptions.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'ordering-option cyber-btn py-2 px-3 rounded-md text-sm cursor-pointer';
+        btn.textContent = option;
+        btn.onclick = () => {
+          if (btn.parentElement === optionsContainer) {
+            moveWord(btn, optionsContainer, answerContainer);
+          } else {
+            moveWord(btn, answerContainer, optionsContainer);
+          }
+        };
+        optionsContainer.appendChild(btn);
+      });
+      document.getElementById('ordering-submit').disabled = false;
+    }
+
+    function handleAnswer(isCorrect) {
+        if (!gameState.isGameActive) return;
+
+        gameState.answeredQuestions++;
+        const question = gameState.questions[gameState.currentQuestionIndex];
+        let correctAnswerText = Array.isArray(question.answer) ? question.answer.join(' ') : question.answer;
+        
+        if (isCorrect) {
+            gameState.score++;
+            scoreDisplay.textContent = gameState.score;
+            scoreDisplay.classList.add('score-animation');
+            setTimeout(() => scoreDisplay.classList.remove('score-animation'), 500);
+            showFeedback(true, "正解！");
+        } else {
+            showFeedback(false, "不正解…", correctAnswerText);
+        }
+
+        setTimeout(nextQuestion, 1000); // 1秒後に次の問題へ
+    }
+
+    function checkMultipleChoiceAnswer(selectedOption, btn) {
+      const question = gameState.questions[gameState.currentQuestionIndex];
+      const isCorrect = selectedOption === question.answer;
+      
+      document.querySelectorAll('#options-container button').forEach(b => {
+        b.onclick = null; // Disable all buttons
+        if (b.textContent === question.answer) b.classList.add('correct');
+        else if (b === btn) b.classList.add('incorrect');
+      });
+      handleAnswer(isCorrect);
+    }
+
+    function checkTypingAnswer() {
+      const input = document.getElementById('typing-input');
+      input.disabled = true;
+      document.getElementById('typing-submit').disabled = true;
+      const userAnswer = input.value.trim();
+      const question = gameState.questions[gameState.currentQuestionIndex];
+      handleAnswer(userAnswer.toLowerCase() === question.answer.toLowerCase());
+    }
+
+    function checkOrderingAnswer() {
+      document.getElementById('ordering-submit').disabled = true;
+      document.querySelectorAll('.ordering-option').forEach(btn => btn.onclick = null);
+      const answerContainer = document.getElementById('ordering-answer');
+      const selected = Array.from(answerContainer.children).map(el => el.textContent);
+      const question = gameState.questions[gameState.currentQuestionIndex];
+      handleAnswer(JSON.stringify(selected) === JSON.stringify(question.answer));
+    }
+
+
+    function showFeedback(isCorrect, text, correctAnswerText = '') {
+        hideAllModeContainers(); // Hide inputs
+        feedbackContainer.classList.remove('hidden');
+        feedbackContainer.classList.add('feedback-fade-in');
+
+        feedbackText.textContent = text;
+        feedbackText.className = isCorrect ? 'text-green-400 font-bold text-2xl' : 'text-red-400 font-bold text-2xl';
+        
+        correctAnswerDisplay.textContent = correctAnswerText ? `正解: ${correctAnswerText}` : '';
+    }
+
+    function startGameTimer() {
+      gameState.timeLeft = 60;
+      timerDisplay.textContent = gameState.timeLeft;
+      timeBar.style.transition = 'none'; // Reset transition
+      timeBar.style.width = '100%';
+      
+      void timeBar.offsetWidth; // Force reflow
+
+      timeBar.style.transition = `width ${gameState.timeLeft}s linear`;
+      timeBar.style.width = '0%';
+
+      gameState.timerInterval = setInterval(() => {
+        gameState.timeLeft--;
+        timerDisplay.textContent = gameState.timeLeft;
+        if (gameState.timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function nextQuestion() {
+      if (!gameState.isGameActive) return;
+      gameState.currentQuestionIndex++;
+      questionCounter.textContent = gameState.currentQuestionIndex + 1;
+      displayQuestion();
+    }
+
+    function endGame() {
+        if (!gameState.isGameActive) return;
+        gameState.isGameActive = false;
+        clearInterval(gameState.timerInterval);
+
+        gameScreen.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+
+        const accuracy = gameState.answeredQuestions > 0 ? Math.round((gameState.score / gameState.answeredQuestions) * 100) : 0;
+        finalScore.textContent = gameState.score;
+        answeredCount.textContent = `${gameState.answeredQuestions}問`;
+        accuracyDisplay.textContent = `${accuracy}%`;
+
+        let rank, comment;
+        if (gameState.score >= 20) { rank = 'S'; comment = '素晴らしい！英語マスターだ！'; } 
+        else if (gameState.score >= 15) { rank = 'A'; comment = '優秀だ！あと少しで完璧！'; } 
+        else if (gameState.score >= 10) { rank = 'B'; comment = '良い調子！繰り返し挑戦しよう！'; } 
+        else if (gameState.score >= 5) { rank = 'C'; comment = 'まだ伸びしろがあるぞ！'; } 
+        else { rank = 'D'; comment = 'もっと学習が必要だ。頑張ろう！'; }
+        rankText.textContent = `ランク: ${rank}`;
+        rankComment.textContent = comment;
+    }
+
+  </script>
+</body>
+</html>
